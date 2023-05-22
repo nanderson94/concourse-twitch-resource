@@ -7,3 +7,33 @@ exec 3>&1 # make stdout available as fd 3 for the result
 exec 1>&2 # redirect all output to stderr for logging
 
 source $(dirname $0)/common.sh
+
+payload="$(cat <&0)"
+
+configure_credentials "$payload"
+
+query_user=$(jq -r '.source.user_login // empty' <<< "$payload")
+version_ref=$(jq -r '.version.ref // ""' <<< "$payload")
+
+if [ -z $query_user ]; then
+    echo "'source.user_login' param must be specified"
+    exit 1
+fi
+
+query_results="$(twitch api get streams -q user_login="$query_user")"
+query_error=$(jq -r '.error // empty' <<< "$query_results")
+
+if ! [ -z $query_error ]; then
+    echo "Twitch has returned an error for our query: ${query_error}\n\n${query_results}"
+    exit 1
+fi
+
+query_length=$(jq -r '.data | length' <<< "$query_results")
+if [[ $query_length -eq 0 ]]; then
+    # No stream in progress, return unchanged
+    jq -r '.version' <<< "$payload" >&3
+    exit 0
+fi
+
+# Stream in progress, return stream id
+jq -r '.data | last | {"ref": .id}' <<< "$payload" >&3 

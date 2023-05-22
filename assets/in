@@ -16,3 +16,35 @@ if [ -z "$destination" ]; then
 fi
 
 payload="$(cat <&0)"
+
+query_user=$(jq -r '.source.user_login // empty' <<< "$payload")
+version_ref=$(jq -r '.version.ref // ""' <<< "$payload")
+
+if [ -z $query_user ]; then
+    echo "'source.user_login' param must be specified"
+    exit 1
+fi
+
+query_results="$(twitch api get streams -q user_login="$query_user")"
+query_error=$(jq -r '.error // empty' <<< "$query_results")
+
+if ! [ -z $query_error ]; then
+    echo "Twitch has returned an error for our query: ${query_error}\n\n${query_results}"
+    exit 1
+fi
+
+query_length=$(jq -r '.data | length' <<< "$query_results")
+if [[ $query_length -eq 0 ]]; then
+    # No stream in progress, return error
+    echo "No streams in progress for '$query_user'\n\n$query_results"
+    exit 1
+fi
+
+stream_id=$(jq -r '.data | last | .id // ""')
+if [[ $stream_id != $version_ref ]]; then
+    echo "Stream '$version_ref' requested is not available for $query_user\n\n$query_results"
+    exit 1
+fi
+
+# Stream in progress, return stream information
+jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$payload" >&3

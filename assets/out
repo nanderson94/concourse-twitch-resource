@@ -16,3 +16,6 @@ if [ -z "$source" ]; then
 fi
 
 payload="$(cat <&0)"
+
+echo "Output module not supported"
+exit 1
