@@ -17,7 +17,9 @@ fi
 
 payload="$(cat <&0)"
 
-configure_credentials "$payload"
+if ! [ -n "${TEST_ENV}" ]; then
+  configure_credentials "$payload"
+fi
 
 query_user=$(jq -r '.source.user_login // empty' <<< "$payload")
 version_ref=$(jq -r '.version.ref // ""' <<< "$payload")
@@ -49,9 +51,11 @@ if [[ $stream_id != $version_ref ]]; then
 fi
 
 # Stream in progress, return stream information
-while read line; do
-  jq -r '.data | last | .'"$line" <<< "$payload" > "$destination"/"$line"
-done <<< $(jq -r '.data | last | keys[]')
+keys="$(jq -r '.data | last | keys[]' <<< "$query_results")"
 
-jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$payload"
-jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$payload" >&3
+while read line; do
+  jq -r '.data | last | .'"$line" <<< "$query_results" > "$destination"/"$line"
+done <<< "$keys"
+
+jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$query_results"
+jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$query_results" >&3
