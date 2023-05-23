@@ -1,0 +1,59 @@
+resources:
+  - name: twitch-resource-source
+    type: git
+    icon: tea
+    source:
+      uri: https://git.nic-a.net/nic/twitch-resource.git
+      branch: main
+  - name: alpine-image
+    type: registry-image
+    check_every: 24h
+    icon: docker
+    source:
+      repository: docker.io/library/alpine
+      tag: latest
+  - name: twitch-resource-image-git
+    type: registry-image
+    icon: docker
+    source:
+      repository: git.nic-a.net/nic/twitch-resource-git
+      username: ((docker.user))
+      password: ((docker.token))
+      tag: latest
+#  - name: twitch-resource-image
+#    type: registry-image
+#    icon: docker
+#    source:
+#      repository: git.nic-a.net/nic/twitch-resource
+#      username: ((docker.user))
+#      password: ((docker.token))
+#      tag: latest
+
+jobs:
+  - name: twitch-resource-build-git
+    public: true
+    plan:
+      - get: twitch-resource-source
+        trigger: true
+      - get: alpine-image
+        trigger: true
+      - task: build-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: concourse/oci-build-task
+          inputs:
+            - name: twitch-resource-source
+          outputs:
+            - name: image
+          params:
+            CONTEXT: twitch-resource-source/
+          run:
+            path: build
+      - put: twitch-resource-image-git
+        params:
+          image: image/image.tar
+          version: "1.0.0"

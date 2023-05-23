@@ -1,5 +1,4 @@
 ARG base_image=alpine:latest
-ARG twitchdl_version=v1.1.19
 
 FROM ${base_image} AS resource
 
@@ -13,16 +12,21 @@ ADD assets /opt/resource
 RUN chmod +x /opt/resource/*
 
 FROM resource AS builder
+ARG twitchdl_version=1.1.19
 WORKDIR /root
-RUN apk --no-cache add go \
-    && curl -L -o twitch-cli.tar.gz https://github.com/twitchdev/twitch-cli/archive/refs/tags/${twitchdl_version}.tar.gz \
-    && tar -x -f twitch-cli.tar.gz
-WORKDIR /root/twitch-cli
+
+# It's a build layer, no need to squish
+RUN apk --no-cache add go
+RUN curl -L -o twitch-cli.tar.gz https://github.com/twitchdev/twitch-cli/archive/refs/tags/v${twitchdl_version}.tar.gz
+RUN gunzip twitch-cli.tar.gz
+RUN tar -x -f twitch-cli.tar
+WORKDIR /root/twitch-cli-${twitchdl_version}
 RUN go build --ldflags "-s -w -X main.buildVersion=source"
+RUN mv twitch-cli /usr/local/bin/twitch
 
 FROM resource AS tests
 ADD test/ /tests
 RUN /tests/all.sh
 
 FROM resource
-COPY --from builder /root/twitch-cli/build/twitch /usr/local/bin/twitch
+COPY --from=builder /usr/local/bin/twitch /usr/local/bin/twitch
