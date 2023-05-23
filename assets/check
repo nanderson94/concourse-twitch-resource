@@ -31,9 +31,20 @@ fi
 query_length=$(jq -r '.data | length' <<< "$query_results")
 if [[ $query_length -eq 0 ]]; then
     # No stream in progress, return unchanged
-    jq -r '.version' <<< "$payload" >&3
+    jq -r '[ .version ]' <<< "$payload" >&3
     exit 0
 fi
+
+allowed_types=$(jq -r '.source.allowed_types // empty' <<< "$payload") 
+stream_type=$(jq -r '.data | last | .type' <<< "$query_results")
+
+if ! [ -z $allowed_types ]; then
+    if ! echo "$allowed_types" | grep -q "$stream_type"; then
+        echo "Stream type '$stream_type' is not in defined allowed types"
+        exit 1
+    fi
+fi
+        
 
 # Stream in progress, return stream id
 jq -r '.data | last | [{"ref": .id}]' <<< "$query_results" >&3 
