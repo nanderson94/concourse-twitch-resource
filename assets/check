@@ -36,4 +36,4 @@ if [[ $query_length -eq 0 ]]; then
 fi
 
 # Stream in progress, return stream id
-jq -r '.data | last | {"ref": .id}' <<< "$payload" >&3 
+jq -r '.data | last | [{"ref": .id}]' <<< "$payload" >&3 
