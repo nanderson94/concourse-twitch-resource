@@ -57,5 +57,26 @@ while read line; do
   jq -r '.data | last | .'"$line" <<< "$query_results" > "$destination"/"$line"
 done <<< "$keys"
 
-jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$query_results"
-jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$query_results" >&3
+output="$(jq -r '.data | last | {
+  "version": {
+    "ref": .id
+  },
+  "metadata": [
+    { "name": "game_id", "value": .game_id }, 
+    { "name": "game_name", "value": .game_name }, 
+    { "name": "is_mature", "value": .is_mature }, 
+    { "name": "language", "value": .language }, 
+    { "name": "started_at", "value": .started_at }, 
+    { "name": "thumbnail_url", "value": .thumbnail_url }, 
+    { "name": "title", "value": .title }, 
+    { "name": "type", "value": .type }, 
+    { "name": "user_id", "value": .user_id }, 
+    { "name": "user_login", "value": .user_login }, 
+    { "name": "user_name", "value": .user_name }, 
+    { "name": "viewer_count", "value": .viewer_count }, 
+    { "name": "tags", "value": .tags | join(",") }
+  ]
+}' <<< "$query_results")"
+
+echo "$output"
+echo "$output" >&3
