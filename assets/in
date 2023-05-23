@@ -17,6 +17,8 @@ fi
 
 payload="$(cat <&0)"
 
+configure_credentials "$payload"
+
 query_user=$(jq -r '.source.user_login // empty' <<< "$payload")
 version_ref=$(jq -r '.version.ref // ""' <<< "$payload")
 
