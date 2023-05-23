@@ -1,6 +1,13 @@
 export TMPDIR=${TMPDIR:-/tmp}
 
 configure_credentials() {
+    # Bail if configured to skip credentials
+    skip_creds=$(jq -r '.source.skip_credentials // false' <<< "$1")
+    if [[ "$skip_creds" == "true" ]]; then
+        echo "Skipping credential setup"
+        return
+    fi
+
     # Determine our "home" for twitch-cli
     # This shouldn't need to change, but may help with troubleshooting idk
     twitch_home=$(jq -r '.source.home // empty' <<< "$1")
