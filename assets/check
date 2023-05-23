@@ -10,9 +10,7 @@ source $(dirname $0)/common.sh
 
 payload="$(cat <&0)"
 
-if ! [ -n $TEST_ENV ]; then
-    configure_credentials "$payload"
-fi
+configure_credentials "$payload"
 
 query_user=$(jq -r '.source.user_login // empty' <<< "$payload")
 version_ref=$(jq -r '.version.ref // ""' <<< "$payload")
