@@ -49,4 +49,9 @@ if [[ $stream_id != $version_ref ]]; then
 fi
 
 # Stream in progress, return stream information
+while read line; do
+  jq -r '.data | last | .'"$line" <<< "$payload" > "$destination"/"$line"
+done <<< $(jq -r '.data | last | keys[]')
+
+jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$payload"
 jq -r '.data | last | {"version": {"ref": .id}, "metadata": .}' <<< "$payload" >&3
