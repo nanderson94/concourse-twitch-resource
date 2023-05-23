@@ -33,20 +33,20 @@ query_results="$(twitch api get streams -q user_login="$query_user")"
 query_error=$(jq -r '.error // empty' <<< "$query_results")
 
 if ! [ -z $query_error ]; then
-    echo "Twitch has returned an error for our query: ${query_error}\n\n${query_results}"
+    echo -e "Twitch has returned an error for our query: ${query_error}\n\n${query_results}"
     exit 1
 fi
 
 query_length=$(jq -r '.data | length' <<< "$query_results")
 if [[ $query_length -eq 0 ]]; then
     # No stream in progress, return error
-    echo "No streams in progress for '$query_user'\n\n$query_results"
+    echo -e "No streams in progress for '$query_user'\n\n$query_results"
     exit 1
 fi
 
-stream_id=$(jq -r '.data | last | .id // ""')
+stream_id=$(jq -r '.data | last | .id // ""' <<< "$query_results")
 if [[ $stream_id != $version_ref ]]; then
-    echo "Stream '$version_ref' requested is not available for $query_user\n\n$query_results"
+    echo -e "Stream '$version_ref' requested is not available for $query_user\n\n$query_results"
     exit 1
 fi
 
