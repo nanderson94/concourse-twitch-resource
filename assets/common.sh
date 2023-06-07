@@ -26,7 +26,7 @@ configure_credentials() {
     fi
 
     # Write basic credentials, with intentionally blank/expired token
-    # Maybe someday I can figure out how to persist this?
+    # TODO: Find out if this is a viable cache candidate
     cat > $twitch_home/.twitch-cli.env <<EOF
 TOKENEXPIRATION=2020-01-01T00:00:00.0Z
 CLIENTID=${twitch_clientid}
@@ -35,5 +35,7 @@ ACCESSTOKEN=
 REFRESHTOKEN=
 TOKENSCOPES=[]
 EOF
-    twitch token
+    # Twitch outputs a token by default. Attempt to hide that information while
+    # letting errors or unexpected output through.
+    twitch token 2>&1 | sed 's/Token: .*/Token: [REDACTED]/'
 }
